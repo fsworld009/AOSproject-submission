@@ -1,0 +1,35 @@
+#To use this sample config run:
+#	cp config_README.txt config.txt
+#This file shows the use of every field
+
+#If any of the below fields are not included,
+#	the system will behave unexpectedly
+
+#DO NOT ADD SPACES!
+
+#num_nodes specifies the number of compute nodes in the system
+num_nodes=4
+
+#net_reliable determines the reliability of the system
+#	1 = reliable, 2 = unreliable
+net_reliable=1
+
+#net_congested determines congestion of the network
+#This is simulated with a 5-15 second added delay to messages
+#	0 = uncongested, 1 = congested
+net_congested=0
+
+#res_alloc_time specifies the time it takes for critical section execution
+#	minutes:seconds:milliseconds
+res_alloc_time=0:0:5
+
+#request_start indicates the start of the list of request times
+request_start
+
+#(node,minutes:seconds:milliseconds)
+(1,0:0:10)
+(2,0:0:10)
+(3,0:0:10)
+(4,0:0:10)
+#request_end indicates the end of the list of request times
+request_end

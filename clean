@@ -1,0 +1,5 @@
+#! /bin/sh
+
+rm -f config??
+rm -f quorum??
+rm -f log??
