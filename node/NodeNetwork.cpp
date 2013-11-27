@@ -98,7 +98,7 @@ int NodeNetwork::send(unsigned int from, unsigned int to, unsigned long timestam
     memcpy(buff,&to,1);
     memcpy(buff+1,&from,1);
     memcpy(buff+2,&timestamp,sizeof(long));
-    memcpy(buff+2+sizeof(long),message,SOCKET_MAX_BUFFER_SIZE-2-sizeof(long));
+    memcpy(buff+2+sizeof(long),message,strlen(message));
 
     /*buff[0] = (char)to;
     buff[1] = (char)from;
@@ -383,7 +383,7 @@ int NodeNetwork::AcceptThread::run(){
         getpeername(accept_socket,&client_addr, &client_len);
 
         if(accept_socket != -1){
-            cout << "ServerSocket: accept socket " << accept_socket << " from " << inet_ntoa(client_addr_in->sin_addr) << endl;
+            //cout << "ServerSocket: accept socket " << accept_socket << " from " << inet_ntoa(client_addr_in->sin_addr) << endl;
             //temp, need improved
             //m_parent->m_accepted_socket = new Socket(accept_socket);
 

@@ -436,7 +436,7 @@ LAKNode::Message LAKNode::string_message(string msgstr)
 		msg.to = atoi(msgstr.substr(0, msgstr.find_first_of(" ")).c_str());
 		msgstr = msgstr.substr(msgstr.find_first_of(" ") + 1);
 
-		while (msgstr.length() > 1)
+		while (msgstr.length() > 2)
 		{
 			Message rq;
                 rq.type = (MessageType) atoi(msgstr.substr(0, msgstr.find_first_of(" ")).c_str());

@@ -283,7 +283,7 @@ void write_config(config c)
 		
 		if( x % 5 == 0)
 		{
-			if( c.reliable = 0)
+			if( c.reliable == 2)
 			{
 				ofile << 3 << endl;
 			}
@@ -476,9 +476,22 @@ bool get_conflict( crit_sec* head)
 	{
 		int n1 = c1->node;
 		crit_sec* c2 = c1;
+		
+		if (c1->started == 0 || c1->finished == 0)
+		{
+			c1 = c1->next;
+			continue;
+		}
+		
 		while( c2->next != NULL )
 		{
 			c2 = c2->next;
+			
+			if (c2->started == 0 || c2->finished == 0)
+			{
+				continue;
+			}
+			
 			if( (c1->started < c2->started && c1->finished > c2->started) 
 				|| (c1->started < c2->finished && c1->finished > c2->finished))
 			{
@@ -525,9 +538,17 @@ unsigned long get_wait(crit_sec* head)
 	
 	while( current != NULL)
 	{
-		num_req ++;
-		total_wait += current->started - current->requested;
+		if (current->started != 0 && current->requested != 0)
+		{
+			num_req ++;
+			total_wait += current->started - current->requested;
+		}
 		current = current->next;
+	}
+	
+	if (num_req == 0)
+	{
+		return -1;
 	}
 	
 	return (total_wait / num_req); //loss of precision, we round to milliseconds
@@ -571,110 +592,101 @@ data* get_results(int num_nodes)
 		char fname[10];
 		string buffer;
 		
-		if( trans[x] < 10)
-		{
-			sprintf(fname, "log0%d", trans[x]);
-		}
-		else
-		{
-			sprintf(fname, "log%d", trans[x]);
-		}
+		sprintf(fname, "log%.2d", trans[x]);
 		
 		ifstream ifile;
-		ifile.open( fname, ios::in | ios::binary );
+		ifile.open(fname);
+		
 		if( ! ifile.is_open() )
 		{
 			cout << "Failed to open " << fname << endl;
 			continue;
 		}
+		
 		cout << "Opened " << fname << endl;
-		string clen;
 		getline(ifile, buffer);
 		
 		while( ! ifile.eof())
 		{
-			getline(ifile, clen);
-			temp_length = strtol(clen.c_str(), NULL, 10);
-			//printf("Buffer[0] = %x\n", buffer[0]);
-			if( (buffer[0] & 0xff) != 255) //only reading control messages
+			if(buffer[0] != 'c')
 			{
-				d->msg_count ++;
+				temp_length = strtol(buffer.c_str(), NULL, 10);
 				total_length += temp_length;
-				getline(ifile, buffer);
-				cout << "Not a control Message" << endl;
-				continue;
-			}
-			
-			if( buffer[1] == '3') //make this message- requesting cs
-			{
-				cout << "Requesting CS..." << endl;
-				current->node = trans[x];
-				memcpy( &(current->requested) , &(buffer[2]) , sizeof(long)); //change all times to longs
-			}
-			else
-			{
-				getline(ifile, buffer);
-				continue;
-			}
-			
-			ifile >> buffer;
-			while( (buffer[0] & 0xff) != 255 && ! ifile.eof()) //looking for entering CS
-			{
-				getline(ifile, clen);
-				temp_length = strtol(clen.c_str(), NULL, 10);
 				d->msg_count ++;
 				getline(ifile, buffer);
-				cout << "Not a control Message" << endl;
-			}
-			
-			if( ifile.eof() || buffer[1] != '1' ) //we reach eof before finding CS enter 
-									//or next control msg is not CS enter
-			{
-				current-> next = (crit_sec*) malloc(sizeof(crit_sec));
-				memset( current->next, 0x00, sizeof(crit_sec));
-				current->next->prev = current;
-				
-				current = current->next;
-				getline(ifile, buffer);
 				continue;
 			}
 			
-			memcpy( &(current->started), &(buffer[2]), sizeof(long));
-			cout << "Entering CS " << current->started << endl;
-			
-			getline(ifile, buffer);
-			while( (buffer[0] & 0xff) != 255 && ! ifile.eof()) //looking for leaving CS
+			if(buffer[1] == '3')
 			{
-				getline(ifile, clen);
-				temp_length = strtol(clen.c_str(), NULL, 10);
-				count ++;
 				getline(ifile, buffer);
-				cout << "Not a control Message" << endl;
-			}
-			
-			if( ifile.eof() || buffer[1] != '2' ) //we reach eof before finding CS finish 
-									//or next control msg is not CS finish
-			{
-				current-> next = (crit_sec*) malloc(sizeof(crit_sec));
-				memset( current->next, 0x00, sizeof(crit_sec));
-				current->next->prev = current;
+				current->requested = strtol(buffer.c_str(), NULL, 10);
+				current->node = x;
 				
-				current = current->next;
 				getline(ifile, buffer);
+				while( ! ifile.eof() && buffer[0] != 'c')
+				{
+					temp_length = strtol(buffer.c_str(), NULL, 10);
+					total_length += temp_length;
+					d->msg_count ++;
+					getline(ifile, buffer);
+				}
+				
+				if(ifile.eof())
+				{
+					continue;
+				}
+				
+				if(buffer[1] == '1')
+				{
+					getline(ifile, buffer);
+					current->started = strtol(buffer.c_str(), NULL, 10);
+					
+					getline(ifile, buffer);
+					while( ! ifile.eof() && buffer[0] != 'c')
+					{
+						temp_length = strtol(buffer.c_str(), NULL, 10);
+						total_length += temp_length;
+						d->msg_count ++;
+						getline(ifile, buffer);
+					}
+					
+					if(ifile.eof())
+					{
+						continue;
+					}
+					
+					if(buffer[1] == '2')
+					{
+						getline(ifile, buffer);
+						current->finished = strtol(buffer.c_str(), NULL, 10);
+						
+						current->next = (crit_sec*) malloc(sizeof(crit_sec));
+						memset(current->next, '\0', sizeof(crit_sec));
+						current->next->prev = current;
+						
+						current = current->next;
+						getline(ifile, buffer);
+						continue;
+					}
+					
+					continue;
+				}
+				
 				continue;
 			}
 			
-			memcpy( &(current->finished), &(buffer[2]), sizeof(long));
-			cout << "Leaving CS " << current->finished << endl;
-			current-> next = (crit_sec*) malloc(sizeof(crit_sec));
-			memset( current->next, 0x00, sizeof(crit_sec));
-			current->next->prev = current;
-			
-			current = current->next;
 			getline(ifile, buffer);
 		}
 		//cout << "Reached EOF" << endl;
 		
+		if( current->requested != 0)
+		{
+			current->next = (crit_sec*) malloc(sizeof(crit_sec));
+			memset(current->next, '\0', sizeof(crit_sec));
+			current->next->prev = current;
+			current = current->next;
+		}
 		ifile.close();
 	}
 	

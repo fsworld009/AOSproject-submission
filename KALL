@@ -1,0 +1,4 @@
+killall ./listenserver.out
+killall ./node.out
+killall ./switch
+killall ./testbed

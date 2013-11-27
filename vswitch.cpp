@@ -81,7 +81,7 @@ void handle( unsigned int client_sock, int net_status, int aport)
 		sprintf(log_name, "log%d", node_num);
 	}
 	
-	log_file.open(log_name, ios::out | ios::binary);
+	log_file.open(log_name);
 	
 	
 	while (1)
@@ -99,21 +99,46 @@ void handle( unsigned int client_sock, int net_status, int aport)
 			break;
 		}
 		
-		char b = buffer[msg_length]; //cut out length of padded 0x00s at the end
+		char b = buffer[msg_length - 1]; //cut out length of padded 0x00s at the end
 		while( b == 0x00 && msg_length > 0)
 		{
 			msg_length --;
-			b = buffer[msg_length];
+			b = buffer[msg_length - 1];
 		}
 		
 		unsigned int t = buffer[0] & 0xff;
 		printf("Message from %d to %d\n", node_num, t);
-		log_file << buffer << endl;
+		//log_file << buffer << endl;
 		log_file << msg_length << endl;
 		
 		if (t == 255) //Control message
 		{
 			send(client_sock, "0", 1, 0);
+			if(buffer[2 + sizeof(long)] == '3') //requesting CS
+			{
+				log_file << "c3" << endl;
+				long tstamp;
+				memcpy(&tstamp, &buffer[2], sizeof(long));
+				cout << "Timestamp: " << tstamp << endl;
+				log_file << tstamp << endl; 
+			}
+			else if (buffer[2 + sizeof(long)] == '2')
+			{
+				log_file << "c2" << endl;
+				long tstamp;
+				memcpy(&tstamp, &buffer[2], sizeof(long));
+				cout << "Timestamp: " << tstamp << endl;
+				log_file << tstamp << endl;
+			}
+			else if (buffer[2 + sizeof(long)] == '1')
+			{
+				log_file << "c1" << endl;
+				long tstamp;
+				memcpy(&tstamp, &buffer[2], sizeof(long));
+				cout << "Timestamp: " << tstamp << endl;
+				log_file << tstamp << endl;
+			}
+			
 			continue; //all messages are logged. These are only logged
 		}
 		

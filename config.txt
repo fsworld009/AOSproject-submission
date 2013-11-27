@@ -8,7 +8,7 @@
 #DO NOT ADD SPACES!
 
 #num_nodes specifies the number of compute nodes in the system
-num_nodes=4
+num_nodes=16
 
 #net_reliable determines the reliability of the system
 #	1 = reliable, 2 = unreliable
@@ -31,5 +31,17 @@ request_start
 (2,0:0:10)
 (3,0:0:10)
 (4,0:0:10)
+(5,0:0:15)
+(6,0:0:15)
+(7,0:0:15)
+(8,0:0:15)
+(9,0:0:20)
+(10,0:0:20)
+(11,0:0:20)
+(12,0:0:20)
+(13,0:0:25)
+(14,0:0:25)
+(15,0:0:25)
+(16,0:0:25)
 #request_end indicates the end of the list of request times
 request_end
