@@ -554,7 +554,29 @@ unsigned long get_wait(crit_sec* head)
 	return (total_wait / num_req); //loss of precision, we round to milliseconds
 }
 
-data* get_results(int num_nodes)
+void write_results(crit_sec* head, int r)
+{
+	char fname[20];
+	memset(fname, '\0', sizeof(fname));
+	sprintf(fname, "output%d", r);
+	
+	ofstream ofile(fname);
+	crit_sec* current = head;
+	
+	while(current != NULL)
+	{
+		if(current->finished != 0)
+		{
+			ofile << current->node << " entered critical section at: " << current->started
+				<< " and exited at: " << current->finished << endl;
+		}
+		current = current->next;
+	}
+	ofile.close();
+	return;
+}
+
+data* get_results(int num_nodes, int r)
 {
 	int trans[37];
 	memset(trans, 0x00, sizeof(trans));
@@ -702,6 +724,8 @@ data* get_results(int num_nodes)
 	
 	d->avg_length = total_length / d->msg_count;
 	
+	write_results(head, r);
+	
 	return d;
 }
 
@@ -797,7 +821,7 @@ int main(int argc, char *argv[])
 	contact_servers(c.num_nodes, msg, aport);
 	
 	//collect results
-	data* res1 = get_results(c.num_nodes);
+	data* res1 = get_results(c.num_nodes, 1);
 	clear_logs();
 	
 	cout << "Results 1 collected" << endl;
@@ -827,7 +851,7 @@ int main(int argc, char *argv[])
 	contact_servers(c.num_nodes, msg, lport);
 	
 	//collect results
-	data* res2 = get_results(c.num_nodes);
+	data* res2 = get_results(c.num_nodes, 2);
 	clear_logs();
 	cleanup();
 	close(server_sock);
